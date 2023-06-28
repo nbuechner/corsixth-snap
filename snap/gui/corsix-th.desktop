@@ -1,9 +1,9 @@
 [Desktop Entry]
 Name=CorsixTH
-Exec=corsixth
+Exec=corsix-th
 Comment=A Theme Hospital Clone
 Comment[de]=Ein Klon von Theme Hospital
-Icon=${SNAP}/meta/gui/corsixth.png
+Icon=${SNAP}/meta/gui/corsix-th.png
 Type=Application
 Terminal=false
 StartupNotify=false

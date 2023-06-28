@@ -1,0 +1,169 @@
+name: corsix-th
+summary: Open source clone of Theme Hospital
+version: "0.66"
+description:
+  CorsixTH aims to re-implement the game engine of Theme Hospital, and be
+  able to load the original game data files. This means that you will need
+  a purchased copy of Theme Hospital, or a copy of the demo, in order to
+  use CorsixTH. After most of the original engine has been re-implemented
+  in open source code, the project will serve as a base from which
+  extensions and improvements to the original game can be made.
+
+  https://github.com/CorsixTH/CorsixTH/wiki/Getting-Started
+base: core22
+
+grade: stable
+confinement: strict
+
+apps:
+   corsix-th:
+    command-chain: ["snap/command-chain/alsa-launch"]
+    command: bin/corsixth.sh
+    environment:
+      ALWAYS_USE_PULSEAUDIO: '1'
+      LD_LIBRARY_PATH: "$SNAP/usr/lib/x86_64-linux-gnu/pulseaudio:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/lua/5.3:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET:$LD_LIBRARY_PATH"
+      LUA_CPATH: '$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/lua/5.3/?.so;;'
+      LUA_PATH: '$SNAP/usr/share/corsix-th/Lua/?.lua;;'
+      TIMIDITY_CFG: $SNAP/timidity.cfg
+    plugs:
+    - network
+    - network-bind
+    - x11
+    - wayland
+    - opengl
+    - home
+    - pulseaudio
+    - audio-playback
+    - joystick
+    - desktop
+    - desktop-legacy
+
+parts:
+  timidityconfig:
+    plugin: dump
+    source: snap/local/config
+    source-type: local
+  corsixth:
+    after: [ prepare ]
+    plugin: cmake
+    cmake-parameters:
+      - -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
+    source: https://github.com/CorsixTH/CorsixTH/archive/refs/tags/v$SNAPCRAFT_PROJECT_VERSION.tar.gz
+    override-pull: |
+      set -x
+      craftctl default
+      sed -i 's|${CMAKE_INSTALL_FULL_DATADIR}/corsix-th/CorsixTH.lua|/snap/corsixth/current/share/corsix-th/CorsixTH.lua|g' CorsixTH/CMakeLists.txt
+      sed -i '/    local mac_app_dir = debug/a     local mac_app_dir = os.getenv("SNAP_USER_COMMON") .. "/data"' CorsixTH/Lua/app.lua
+    build-snaps:
+      - cmake/latest/stable
+    build-environment:
+      - PATH: /snap/bin:$PATH
+    build-packages:
+      - imagemagick
+      - libavcodec-dev
+      - libavformat-dev
+      - libfreetype-dev
+      - liblua5.3-dev
+      - libsdl2-dev
+      - libsdl2-mixer-dev
+      - libswresample-dev
+      - libswscale-dev
+      - lua-busted
+      - lua5.3
+      - lua-lpeg
+    stage-packages:
+      - libavcodec58
+      - libavformat58
+      - libavutil56
+      - libfreetype6
+      - libsdl2-2.0-0
+      - libsdl2-mixer-2.0-0
+      - libswresample3
+      - libswscale5
+      - lua-filesystem
+      - lua-lpeg
+      - timidity
+      - liblua5.3-0
+      - libaudio2
+      - libpulse0
+      - libsndio7.0
+      - freepats
+
+  prepare:
+    source: .
+    after: [alsa-mixin]
+    plugin: dump
+    stage-packages:
+      - zenity
+      - aria2
+      - p7zip-full
+      - mdf2iso
+    override-build: |
+      mkdir -p bin/
+      cd bin
+      echo "#!/bin/sh" >  corsixth.sh
+      echo "if [ ! -d \$SNAP_USER_COMMON/data/HOSP ]; then" >> corsixth.sh
+      echo "  mkdir -p \$SNAP_USER_COMMON/data" >> corsixth.sh
+      echo "  cd \$SNAP_USER_COMMON/data" >> corsixth.sh
+      echo "  rm -Rf Theme.Hospital.2001* " >> corsixth.sh
+      echo "  aria2c https://archive.org/download/theme-hospital-2001-bullfrog-cd/Theme.Hospital.2001.Bullfrog.CD.7z -j6 -x6 --summary-interval=10 | grep -E --line-buffered -o '\([0-9]+%\)' | sed -u 's/[^0-9]//g' | zenity --text='Downloading game files. Please wait.' --progress --percentage=0 --auto-close --auto-kill --title='Download required'" >> corsixth.sh
+      echo "  \$SNAP/usr/lib/p7zip/7z x Theme.Hospital.2001.Bullfrog.CD.7z " >> corsixth.sh
+      echo "  mdf2iso Theme.Hospital.2001.Bullfrog.CD/hospital.mdf " >> corsixth.sh
+      echo "  \$SNAP/usr/lib/p7zip/7z x Theme.Hospital.2001.Bullfrog.CD/hospital.iso" >> corsixth.sh
+      echo "  rm -Rf Theme.Hospital.2001* " >> corsixth-cli.sh
+      echo "  find . -type f -not -path './HOSP*' -delete" >> corsixth-cli.sh
+      echo "fi" >> corsixth.sh
+      echo "\$SNAP/usr/bin/corsix-th --interpreter=\$SNAP/usr/share/corsix-th/CorsixTH.lua" >> corsixth.sh
+      echo "exit 0" >> corsixth.sh
+      chmod a+rx corsixth.sh
+      cd ..
+      craftctl default
+
+  alsa-mixin:
+      plugin: dump
+      source: https://github.com/diddlesnaps/snapcraft-alsa.git
+      source-subdir: snapcraft-assets
+      build-packages:
+        - libasound2-dev
+      stage-packages:
+        - libasound2
+        - libasound2-plugins
+        - yad
+      stage:
+        # restrict to only audio-related files - you need to ensure
+        # that gtk3 is staged for yad to work correctly, to prompt
+        # users to connect the alsa plug or proceed with pulseaudio.
+        #
+        # This helps prevent symbol conflicts in situations where
+        # you're using a non-default library, such as those that the
+        # gnome-3-34 extension for core18 provides.
+        - etc/asound.conf
+        - snap/command-chain/alsa-launch
+        - usr/bin/yad*
+        - usr/lib/$SNAPCRAFT_ARCH_TRIPLET/alsa-lib
+        - usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libasound*
+        - usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libdnsfile*
+        - usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libFLAC*
+        - usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libjack*
+        - usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libpulse*
+        - usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libsamplerate*
+        - usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libspeex*
+        - usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libvorbis*
+        - usr/lib/$SNAPCRAFT_ARCH_TRIPLET/pulseaudio
+
+layout:
+  /usr/share/alsa:
+    bind: $SNAP/usr/share/alsa
+  /usr/share/zenity:
+    bind: $SNAP/usr/share/zenity
+  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/alsa-lib:
+    bind: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/alsa-lib
+  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libGLX_nvidia.so.0:
+    symlink: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libGLX_nvidia.so.0
+  /usr/share/libdrm:
+    bind: $SNAP/usr/share/libdrm
+lint:
+  ignore:
+    - classic
+    - library
+
