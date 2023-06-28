@@ -90,6 +90,7 @@ parts:
       - libsndio7.0
       - freepats
       - libvulkan1
+      - libgl1-mesa-dri
       - mesa-vulkan-drivers
 
   prepare:
