@@ -25,6 +25,7 @@ apps:
       LUA_CPATH: '$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/lua/5.3/?.so;;'
       LUA_PATH: '$SNAP/usr/share/corsix-th/Lua/?.lua;;'
       TIMIDITY_CFG: $SNAP/timidity.cfg
+      VK_ICD_FILENAMES: "/var/lib/snapd/lib/vulkan/icd.d/nvidia_icd.json:$SNAP/usr/share/vulkan/icd.d/radeon.x86_64.json:$SNAP/usr/share/vulkan/icd.d/intel_icd.x86_64.json"
     plugs:
     - network
     - network-bind
@@ -88,6 +89,8 @@ parts:
       - libpulse0
       - libsndio7.0
       - freepats
+      - libvulkan1
+      - mesa-vulkan-drivers
 
   prepare:
     source: .
@@ -158,6 +161,14 @@ layout:
     bind: $SNAP/usr/share/zenity
   /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/alsa-lib:
     bind: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/alsa-lib
+  /usr/share/vulkan:
+    symlink: $SNAP/usr/share/vulkan
+  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libvulkan_intel.so:
+    symlink: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libvulkan_intel.so
+  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libvulkan_radeon.so:
+    symlink: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libvulkan_lvp.so
+  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libvulkan_lvp.so:
+    symlink: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libvulkan_lvp.so
   /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libGLX_nvidia.so.0:
     symlink: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libGLX_nvidia.so.0
   /usr/share/libdrm:
