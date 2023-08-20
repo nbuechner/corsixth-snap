@@ -1,5 +1,6 @@
 #!/bin/bash
-URL=$(curl -s https://api.github.com/repos/CorsixTH/CorsixTH/releases/latest | jq '.assets[] | select(.name|endswith(".tar.gz.asc")) | .browser_download_url' | tr -d '"')
+URL=$(curl -s https://api.github.com/repos/CorsixTH/CorsixTH/releases/latest | jq '.assets[] | select(.name|endswith(".tar.gz.sig")) | .browser_download_url' | tr -d '"')
+echo $URL
 VERSION=$(echo $URL|cut -d'/' -f8|tr -d '-'|cut -c2-)
 if [[ "$VERSION" == "" ]]; then
    echo "ERROR: could not fetch latest version"
