@@ -49,7 +49,7 @@ parts:
     after: [ prepare ]
     plugin: cmake
     cmake-parameters:
-      - -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -Wno-dev
     source: https://github.com/CorsixTH/CorsixTH/archive/refs/tags/v$SNAPCRAFT_PROJECT_VERSION.tar.gz
     override-pull: |
       set -x
@@ -73,7 +73,10 @@ parts:
       - lua-busted
       - lua5.3
       - lua-lpeg
+      - libssl-dev
+      - libcurl4-openssl-dev
     stage-packages:
+      - libcurl4
       - libavcodec58
       - libavformat58
       - libavutil56
